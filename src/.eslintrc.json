@@ -1,0 +1,13 @@
+{
+  "extends": [
+    "../.eslintrc.cjs",
+    "wikimedia/client/es6",
+    "wikimedia/mediawiki",
+    "wikimedia/vue3/es6",
+    "wikimedia/language/es2022"
+  ],
+  "rules": {
+    "es-x/no-optional-chaining": "off",
+    "es-x/no-async-functions": "off"
+  }
+}
