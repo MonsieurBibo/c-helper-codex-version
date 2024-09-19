@@ -15,10 +15,6 @@
 					Checkbox group demo
 				</CdxLabel>
 
-				<div v-for="i in [1, 2, 3]">
-					{{ i }}
-				</div>
-
 				<CdxCheckbox
 					v-for="checkbox in checkboxes"
 					:key="'checkbox-' + checkbox.value"
