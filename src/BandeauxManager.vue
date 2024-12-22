@@ -10,32 +10,44 @@
 		@primary="onPrimaryAction"
 		@default="onDefaultAction">
 		<div>
-			<div role="group" aria-labelledby="cdx-demo-checkbox-group-label">
-				<CdxLabel id="cdx-demo-checkbox-group-label">
-					Checkbox group demo
-				</CdxLabel>
+			<template v-for="( groupBandeaux, category ) in groupedBandeaux" :key="category">
+				<div role="group" :aria-labelledby="'group-label-' + category.toLowerCase()">
+					<CdxLabel :id="'group-label-' + category.toLowerCase()" class="cdx-label group-label">
+						{{ category }}
+					</CdxLabel>
 
-				<CdxCheckbox
-					v-for="checkbox in checkboxes"
-					:key="'checkbox-' + checkbox.value"
-					v-model="checkboxValue"
-					:input-value="checkbox.value">
-					{{ checkbox.label }}
-				</CdxCheckbox>
-			</div>
+					<CdxCheckbox
+						v-for="bandeau in groupBandeaux"
+						:key="'checkbox-' + bandeau.display"
+						v-model="checkboxValue"
+						:input-value="bandeau.display"
+						:title="bandeau.help">
+						{{ bandeau.display }}
+					</CdxCheckbox>
+				</div>
+			</template>
 		</div>
 	</CdxDialog>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, computed } from 'vue';
 import { CdxCheckbox, CdxDialog, CdxLabel } from '@wikimedia/codex';
+
+interface Bandeau {
+	category: string;
+	display: string;
+	template: string;
+	help: string;
+	extra?: string;
+	reason?: string;
+}
 
 export default defineComponent( {
 	components: { CdxDialog, CdxCheckbox, CdxLabel },
 	setup() {
-
-		const bandeaux = [
+		// Le même tableau bandeaux qu'avant...
+		const bandeaux: Bandeau[] = [
 			{
 				category: 'Mise en forme',
 				display: 'À catégoriser',
@@ -134,12 +146,6 @@ export default defineComponent( {
 				template: '{{Alerte langue|$(reason)|$(extra)}}',
 				extra: 'Nom de la langue, tel qu\'utilisé dans l\'article relatif à cette langue :',
 				reason: 'nom de la langue utilisée ainsi qu\'au moins une lettre de cette langue qui pourrait poser des problèmes d\'affichage :',
-				help: ''
-			},
-			{
-				category: 'Neutralité',
-				display: 'Anecdotes',
-				template: '{{Anecdotes}}',
 				help: ''
 			},
 			{
@@ -474,21 +480,25 @@ export default defineComponent( {
 			}
 		];
 
-		const checkboxValue = ref( [] );
+		const checkboxValue = ref<string[]>( [] );
 		const open = ref( true );
-		const checkboxes = bandeaux.map( ( bandeau ) => ( {
-			label: bandeau.display,
-			value: bandeau.display
-		} ) );
+
+		// Groupe les bandeaux par catégorie
+		const groupedBandeaux = computed( () => {
+			return bandeaux.reduce( ( groups, bandeau ) => {
+				if ( !groups[ bandeau.category ] ) {
+					groups[ bandeau.category ] = [];
+				}
+				groups[ bandeau.category ].push( bandeau );
+				return groups;
+			}, {} as Record<string, Bandeau[]> );
+		} );
 
 		const generateTemplates = ( checkboxesValue: string[] ) => {
 			let outputTemplates = '';
 			checkboxesValue.forEach( ( value ) => {
-				for ( const bandeau of bandeaux ) {
-					if ( value !== bandeau.display ) {
-						continue;
-					}
-
+				const bandeau = bandeaux.find( ( b ) => b.display === value );
+				if ( bandeau ) {
 					outputTemplates += bandeau.template + '\n';
 				}
 			} );
@@ -506,21 +516,20 @@ export default defineComponent( {
 			};
 
 			new mw.Api().postWithEditToken( params )
-				.done( function ( /* data */ ) {
-					mw.notify( 'Bandeau(x) ajouté(s), rechargement de la page...', { title: 'C-helper', type: 'success' } );
+				.done( () => {
+					mw.notify( 'Bandeau(x) ajouté(s), rechargement de la page...',
+						{ title: 'C-helper', type: 'success' } );
 				} )
-				.fail( function ( jqXHR ) {
+				.fail( ( jqXHR ) => {
 					mw.notify( 'Erreur Réseau', { title: 'C-helper', type: 'error' } );
 					console.debug( jqXHR );
 				} );
-
 		};
 
 		function onPrimaryAction() {
 			open.value = false;
 			const templates = generateTemplates( checkboxValue.value );
 			sendRequest( templates );
-			// console.debug( 'FINISHED ?' );
 			setTimeout( () => {
 				location.reload();
 			}, 5000 );
@@ -529,16 +538,23 @@ export default defineComponent( {
 		function onDefaultAction() {
 			open.value = false;
 		}
+
 		return {
-			checkboxes,
+			groupedBandeaux,
 			checkboxValue,
 			open,
 			onPrimaryAction,
 			onDefaultAction
 		};
-	},
-	unmounted() {
 	}
 } );
-
 </script>
+
+<style>
+.group-label {
+	font-weight: bold;
+	margin-top: 1em;
+	margin-bottom: 0.5em;
+	color: #54595d;
+}
+</style>

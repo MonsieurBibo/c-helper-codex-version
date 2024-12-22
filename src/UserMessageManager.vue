@@ -11,7 +11,8 @@ import { CdxDialog } from '@wikimedia/codex';
 export default defineComponent( {
 	components: { CdxDialog },
 	setup() {
-
+		const checkboxValue = ref( [] );
+		const open = ref( true );
 	}
 } );
 

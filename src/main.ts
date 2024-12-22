@@ -79,7 +79,8 @@ if ( !document.getElementById( 'app' ) ) {
 			break;
 
 		case 2: // Utilisateur:
-			displayUserMessageManagerDialog();
+			// displayUserMessageManagerDialog();
+			displayBandeauxManagerDialog();
 			break;
 		case 3: // Discussion Utilisateur :
 			break;
