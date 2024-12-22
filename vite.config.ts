@@ -23,6 +23,7 @@ export default defineConfig( {
 	],
 	resolve: {
 		alias: {
+			// eslint-disable-next-line es-x/no-import-meta
 			'@': fileURLToPath( new URL( './src', import.meta.url ) )
 		}
 	},

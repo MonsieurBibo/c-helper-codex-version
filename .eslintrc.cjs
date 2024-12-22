@@ -1,16 +1,25 @@
-/* eslint-env node */
-require( '@rushstack/eslint-patch/modern-module-resolution' );
-
-/** @type {import('eslint')} */
 module.exports = {
 	root: true,
+	env: {
+		node: true
+	},
 	extends: [
-		'plugin:vue/vue3-essential',
 		'eslint:recommended',
-		'@vue/eslint-config-typescript',
-		'wikimedia/common'
+		'plugin:@typescript-eslint/recommended',
+		'plugin:vue/vue3-recommended',
+		'wikimedia/client/es6',
+		'wikimedia/mediawiki',
+		'wikimedia/vue3/es6',
+		'wikimedia/language/es6'
 	],
+	parser: 'vue-eslint-parser',
 	parserOptions: {
-		ecmaVersion: 'latest'
-	}
+		parser: '@typescript-eslint/parser',
+		ecmaVersion: 2015,
+		sourceType: 'module'
+	},
+	plugins: [
+		'@typescript-eslint',
+		'vue'
+	]
 };

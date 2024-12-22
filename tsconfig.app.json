@@ -4,7 +4,8 @@
         "env.d.ts",
         "src/**/*",
         "src/**/*.vue",
-        "userscript.js"
+        "userscript.js",
+        "node_modules/types-mediawiki/index.d.ts"
     ],
     "exclude": [
         "src/**/__tests__/*"
@@ -14,12 +15,12 @@
         "baseUrl": ".",
         "paths": {
             "@/*": [
-                "./src/*"
+                "./src/*",
             ]
         },
+        "types": ["types-mediawiki"],
         "typeRoots": [
-            "./node_modules/@types",
-            "./node_modules/types-mediawiki"
+            "./node_modules/@types"
         ]
     }
 }
