@@ -2,100 +2,144 @@ import { createApp } from 'vue';
 import BandeauxManager from './BandeauxManager.vue';
 import UserMessageManager from './UserMessageManager.vue';
 
-function displayBandeauxManagerDialog() {
-	const toolboxId = 'p-tb';
-	const toolbox = document.getElementById( toolboxId );
-
-	if ( !toolbox ) {
-		mw.notify( 'Erreur: Impossible de trouver la boîte à outils', { type: 'error' } );
-		return;
+const modules = {
+	bandeaux: {
+		id: 'c-helper-codex-bandeaux',
+		title: 'Apposer des bandeaux de maintenance',
+		label: 'Bandeaux'
+	},
+	messages: {
+		id: 'c-helper-codex-messages',
+		title: 'Laisser un message sur la pdd de l\'utilisateur',
+		label: 'Message'
 	}
+};
 
-	const portletLink = mw.util.addPortletLink(
-		toolboxId,
-		'#',
-		'C-helper Bandeaux',
-		'c-helper-codex-version'
-	);
-
-	if ( !portletLink ) {
-		mw.notify( 'Erreur: Impossible d\'ajouter le lien dans la boîte à outils', { type: 'error' } );
-		return;
+function createMountPoint( id: string ): HTMLDivElement | null {
+	const mountPoint = document.createElement( 'div' );
+	mountPoint.setAttribute( 'id', id );
+	const contentText = document.querySelector( '#mw-content-text' );
+	if ( !contentText ) {
+		return null;
 	}
-
-	portletLink.addEventListener( 'click', ( e: Event ) => {
-		e.preventDefault();
-		createApp( BandeauxManager ).mount( '#app-bandeaux' );
-	} );
+	contentText.insertAdjacentElement( 'beforebegin', mountPoint );
+	return mountPoint;
 }
 
-function displayUserMessageManagerDialog() {
-	const toolboxId = 'p-tb';
-	const toolbox = document.getElementById( toolboxId );
+function createMenuItem( module: typeof modules[keyof typeof modules], callback: () => void, isMinerva = false ) {
+	const $item = $( '<li>' )
+		.addClass( isMinerva ? 'toggle-list-item mw-list-item-js' : 'mw-list-item' )
+		.attr( 'id', module.id );
 
-	if ( !toolbox ) {
-		mw.notify( 'Erreur: Impossible de trouver la boîte à outils', { type: 'error' } );
-		return;
+	const $link = $( '<a>' )
+		.addClass( isMinerva ? 'toggle-list-item__anchor' : '' )
+		.attr( {
+			href: '#',
+			title: module.title
+		} )
+		.on( 'click', ( e ) => {
+			e.preventDefault();
+			callback();
+		} );
+
+	if ( isMinerva ) {
+		$link.append(
+			$( '<span>' ).addClass( 'minerva-icon' ),
+			$( '<span>' ).addClass( 'toggle-list-item__label' ).text( module.label )
+		);
+	} else {
+		$link.text( module.label );
 	}
 
-	const portletLink = mw.util.addPortletLink(
-		toolboxId,
-		'#',
-		'C-helper Messages',
-		'c-helper-codex-messages'
-	);
+	return $item.append( $link );
+}
 
-	if ( !portletLink ) {
-		mw.notify( 'Erreur: Impossible d\'ajouter le lien dans la boîte à outils', { type: 'error' } );
-		return;
+function setupModules() {
+	const skin = mw.config.get( 'skin' );
+	const namespace: number = mw.config.get( 'wgNamespaceNumber' );
+
+	const moduleCallbacks: Record<string, () => void> = {
+		bandeaux: () => createApp( BandeauxManager ).mount( '#app-bandeaux' ),
+		messages: () => createApp( UserMessageManager ).mount( '#app-messages' )
+	};
+
+	if ( skin === 'minerva' ) {
+		const $overflowList = $( '.page-actions-overflow-list' );
+		if ( !$overflowList.length ) {
+			return;
+		}
+
+		switch ( namespace ) {
+			case 0:
+				$overflowList.append( createMenuItem( modules.bandeaux, moduleCallbacks.bandeaux, true ) );
+				break;
+			case 1:
+				$overflowList.append( createMenuItem( modules.messages, moduleCallbacks.messages, true ) );
+				break;
+			case 2:
+				$overflowList.append(
+					createMenuItem( modules.bandeaux, moduleCallbacks.bandeaux, true ),
+					createMenuItem( modules.messages, moduleCallbacks.messages, true )
+				);
+				break;
+			case 3:
+				$overflowList.append( createMenuItem( modules.messages, moduleCallbacks.messages, true ) );
+				break;
+		}
+	} else {
+		const $cactions = $( '#p-cactions' );
+		if ( !$cactions.length ) {
+			return;
+		}
+
+		const $clone = $cactions.clone();
+		const $ul = $clone.find( 'ul' );
+
+		$clone.removeAttr( 'id' )
+			.addClass( 'vector-menu' )
+			.attr( 'title', 'C-helper' )
+			.find( '.vector-menu-heading' )
+			.text( 'Č' );
+
+		$ul.empty();
+
+		switch ( namespace ) {
+			case 0:
+				$ul.append( createMenuItem( modules.bandeaux, moduleCallbacks.bandeaux ) );
+				break;
+			case 1:
+				$ul.append( createMenuItem( modules.messages, moduleCallbacks.messages ) );
+				break;
+			case 2:
+				$ul.append(
+					createMenuItem( modules.bandeaux, moduleCallbacks.bandeaux ),
+					createMenuItem( modules.messages, moduleCallbacks.messages )
+				);
+				break;
+			case 3:
+				$ul.append( createMenuItem( modules.messages, moduleCallbacks.messages ) );
+				break;
+		}
+
+		if ( $ul.children().length ) {
+			$clone.insertAfter( $cactions );
+		}
 	}
-
-	portletLink.addEventListener( 'click', ( e: Event ) => {
-		e.preventDefault();
-		createApp( UserMessageManager ).mount( '#app-messages' );
-	} );
 }
 
 function initializeApp() {
-	if ( document.getElementById( 'app-bandeaux' ) || document.getElementById( 'app-messages' ) ) {
+	if ( $( '#app-bandeaux, #app-messages' ).length ) {
 		return;
 	}
-
-	const bandeauxMount = document.createElement( 'div' );
-	bandeauxMount.setAttribute( 'id', 'app-bandeaux' );
-
-	const messagesMount = document.createElement( 'div' );
-	messagesMount.setAttribute( 'id', 'app-messages' );
-
-	const contentText = document.querySelector( '#mw-content-text' );
-	if ( !contentText ) {
-		mw.notify( 'Erreur: Impossible de trouver l\'élément de contenu', { type: 'error' } );
-		return;
-	}
-
-	contentText.insertAdjacentElement( 'beforebegin', bandeauxMount );
-	contentText.insertAdjacentElement( 'beforebegin', messagesMount );
 
 	const namespace: number = mw.config.get( 'wgNamespaceNumber' );
-
-	switch ( namespace ) {
-		case 0: // Espace principal
-			displayBandeauxManagerDialog();
-			// displayUserMessageManagerDialog();
-			break;
-		case 1: // Discussion:
-			// displayUserMessageManagerDialog();
-			break;
-		case 2: // Utilisateur:
-			displayBandeauxManagerDialog();
-			displayUserMessageManagerDialog();
-			break;
-		case 3: // Discussion Utilisateur :
-			displayUserMessageManagerDialog();
-			break;
-		default:
-			break;
+	if ( namespace < 0 ) {
+		return;
 	}
+
+	$( '<div id="app-bandeaux">' ).insertBefore( '#mw-content-text' );
+	$( '<div id="app-messages">' ).insertBefore( '#mw-content-text' );
+	setupModules();
 }
 
-initializeApp();
+$( initializeApp );
