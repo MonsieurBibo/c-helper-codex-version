@@ -4,28 +4,16 @@
 		title="C helper - Informer un utilisateur"
 		:primary-action="{
 			label: 'Valider la requête',
-			actionType: 'progressive'
+			actionType: 'progressive',
+			disabled: !canSubmit
 		}"
 		:default-action="{ label: 'Fermer' }"
 		@primary="onPrimaryAction"
 		@default="onDefaultAction"
 	>
 		<div class="message-manager">
-			<div v-if="shouldShowPageInput" class="page-input-section">
-				<CdxLabel for="page-input">
-					Article modifié :
-				</CdxLabel>
-				<CdxTextInput
-					id="page-input"
-					v-model="pageInput"
-				></CdxTextInput>
-			</div>
-
 			<div class="subst-section">
-				<CdxCheckbox
-					v-model="substCheckbox"
-					class="subst-checkbox"
-				>
+				<CdxCheckbox v-model="substCheckbox">
 					Substituer les modèles
 				</CdxCheckbox>
 			</div>
@@ -36,33 +24,47 @@
 						{{ category }}
 					</CdxLabel>
 
-					<CdxCheckbox
-						v-for="template in templates"
-						:key="template.display"
-						v-model="selectedTemplates"
-						:input-value="template.display"
-						class="template-checkbox"
-					>
-						{{ template.display }}
-						<template v-if="template.help" #description>
-							{{ template.help }}
-						</template>
-					</CdxCheckbox>
-
 					<div
 						v-for="template in templates"
-						v-show="selectedTemplates.indexOf( template.display ) >= 0 &&
-							template.extra"
-						:key="`extra-${template.display}`"
-						class="extra-input"
+						:key="template.display"
+						class="template-container"
 					>
-						<CdxLabel :for="`extra-${template.display}`">
-							{{ template.extra }}
-						</CdxLabel>
-						<CdxTextInput
-							:id="`extra-${template.display}`"
-							v-model="extraInputs[template.display]"
-						></CdxTextInput>
+						<CdxRadio
+							v-model="selectedTemplate"
+							:input-value="template.display"
+							name="message-radio"
+							class="template-radio"
+						>
+							{{ template.display }}
+							<template v-if="template.help" #description>
+								{{ template.help }}
+							</template>
+						</CdxRadio>
+
+						<div
+							v-show="selectedTemplate === template.display && template.required?.includes( 'page' )"
+							class="page-input-container"
+						>
+							<CdxField :status="getPageInputStatus( template )">
+								<CdxLabel>Article modifié :</CdxLabel>
+								<CdxTextInput v-model="pageInput"></CdxTextInput>
+							</CdxField>
+						</div>
+
+						<div
+							v-show="selectedTemplate === template.display && template.extra"
+							class="extra-input"
+						>
+							<CdxField
+								:status="getExtraInputStatus( template.display )"
+							>
+								<CdxLabel>{{ template.extra }}</CdxLabel>
+								<CdxTextInput
+									v-model="extraInputs[template.display]"
+									:disabled="selectedTemplate !== template.display"
+								></CdxTextInput>
+							</CdxField>
+						</div>
 					</div>
 				</div>
 			</template>
@@ -72,7 +74,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed } from 'vue';
-import { CdxCheckbox, CdxDialog, CdxLabel, CdxTextInput } from '@wikimedia/codex';
+import { CdxCheckbox, CdxDialog, CdxLabel, CdxTextInput, CdxRadio, CdxField } from '@wikimedia/codex';
 import { templates, categories } from './messageTemplates';
 
 interface Template {
@@ -82,6 +84,7 @@ interface Template {
 	help: string;
 	extra?: string;
 	reason?: string;
+	required?: string[];
 }
 
 export default defineComponent( {
@@ -90,18 +93,52 @@ export default defineComponent( {
 		CdxCheckbox,
 		CdxDialog,
 		CdxLabel,
-		CdxTextInput
+		CdxTextInput,
+		CdxRadio,
+		CdxField
 	},
 	setup() {
 		const open = ref( true );
 		const pageInput = ref( '' );
 		const substCheckbox = ref( true );
-		const selectedTemplates = ref<string[]>( [] );
+		const selectedTemplate = ref( '' );
 		const extraInputs = ref<Record<string, string>>( {} );
 
-		const shouldShowPageInput = computed( () => {
-			const namespace = mw.config.get( 'wgNamespaceNumber' );
-			return namespace === 2 || namespace === 3;
+		const currentTemplate = computed( () => {
+			return templates.find( ( t ) => t.display === selectedTemplate.value );
+		} );
+
+		const getPageInputStatus = ( template: Template ) => {
+			if ( !template.required?.includes( 'page' ) ) {
+				return 'default';
+			}
+			if ( selectedTemplate.value === template.display && !pageInput.value ) {
+				return 'error';
+			}
+			return 'default';
+		};
+
+		const getExtraInputStatus = ( templateDisplay: string ) => {
+			// Toujours retourne 'default' car l'extra est facultatif
+			return 'default';
+		};
+
+		const canSubmit = computed( () => {
+			if ( !selectedTemplate.value ) {
+				return false;
+			}
+
+			const template = currentTemplate.value;
+			if ( !template ) {
+				return false;
+			}
+
+			if ( template.required?.includes( 'page' ) && !pageInput.value ) {
+				return false;
+			}
+			// On retire la vérification des champs extra car ils sont facultatifs
+
+			return true;
 		} );
 
 		const groupedTemplates = computed( () => {
@@ -144,63 +181,51 @@ export default defineComponent( {
 
 				return String( pageData.revisions[ 0 ].revid );
 			} catch ( error ) {
-				mw.notify( `Erreur lors de la récupération de la révision : ${ error }`,
-					{ type: 'error' } );
+				mw.notify( `Erreur lors de la récupération de la révision : ${ error }`, { type: 'error' } );
 				return '';
 			}
 		};
 
 		const generateTemplateText = async () => {
-			// eslint-disable-next-line es-x/no-string-prototype-replaceall
 			const targetPage = pageInput.value || mw.config.get( 'wgPageName' ).replaceAll( '_', ' ' );
-			let targetUser = '';
-
-			if ( document.querySelector( '.diff' ) ) {
-				targetUser = ( document.querySelector( '.diff-ntitle .mw-userlink' ) as HTMLElement )?.textContent || '';
-			} else {
-				targetUser = mw.config.get( 'wgRelevantUserName' ) || '';
-			}
+			const targetUser = document.querySelector( '.diff' ) ?
+				( document.querySelector( '.diff-ntitle .mw-userlink' ) as HTMLElement )?.textContent || '' :
+				mw.config.get( 'wgRelevantUserName' ) || '';
 
 			let revertedEdit = '';
-			let outputText = '';
-
-			for ( const templateName of selectedTemplates.value ) {
-				const template = templates.find( ( t ) => t.display === templateName );
-				if ( !template ) {
-					continue;
-				}
-
-				let templateText = template.template;
-
-				// eslint-disable-next-line unicorn/prefer-includes
-				if ( templateText.indexOf( '$(diff)' ) >= 0 && !revertedEdit && targetPage ) {
-					revertedEdit = await getLastEditOnPage( targetPage, targetUser );
-				}
-
-				// eslint-disable-next-line es-x/no-string-prototype-replaceall
-				templateText = templateText
-					.replaceAll( '$(day)', '{{subst:CURRENTDAY}}' )
-					.replaceAll( '$(month)', '{{subst:CURRENTMONTHNAME}}' )
-					.replaceAll( '$(year)', '{{subst:CURRENTYEAR}}' )
-					.replaceAll( '$(page)', targetPage )
-					.replaceAll( '$(diff)', revertedEdit )
-					.replaceAll( '$(user)', mw.config.get( 'wgUserName' ) || '' )
-					.replaceAll( '$(extra)', extraInputs.value[ templateName ] || '' );
-
-				const subst = substCheckbox.value ? 'subst:' : '';
-				outputText += `\n\n{{${ subst }${ templateText }}}`;
+			const template = templates.find( ( t ) => t.display === selectedTemplate.value );
+			if ( !template ) {
+				return { outputText: '', targetUser };
 			}
 
-			return { outputText: outputText + '\n~~~~', targetUser };
+			let templateText = template.template;
+
+			if ( templateText.includes( '$(diff)' ) && !revertedEdit && targetPage ) {
+				revertedEdit = await getLastEditOnPage( targetPage, targetUser );
+			}
+
+			templateText = templateText
+				.replaceAll( '$(day)', '{{subst:CURRENTDAY}}' )
+				.replaceAll( '$(month)', '{{subst:CURRENTMONTHNAME}}' )
+				.replaceAll( '$(year)', '{{subst:CURRENTYEAR}}' )
+				.replaceAll( '$(page)', targetPage )
+				.replaceAll( '$(diff)', revertedEdit )
+				.replaceAll( '$(user)', mw.config.get( 'wgUserName' ) || '' )
+				.replaceAll( '$(extra)', extraInputs.value[ template.display ] || '' );
+
+			const subst = substCheckbox.value ? 'subst:' : '';
+			return {
+				outputText: `\n\n{{${ subst }${ templateText }}}\n~~~~`,
+				targetUser
+			};
 		};
 
 		const onPrimaryAction = async () => {
-			open.value = false;
-
-			if ( selectedTemplates.value.length === 0 ) {
+			if ( !canSubmit.value ) {
 				return;
 			}
 
+			open.value = false;
 			const { outputText, targetUser } = await generateTemplateText();
 
 			try {
@@ -208,15 +233,13 @@ export default defineComponent( {
 					action: 'edit',
 					title: `Discussion utilisateur:${ targetUser }`,
 					appendtext: outputText,
-					summary: `Message utilisateur : ${ selectedTemplates.value.join( ', ' ) }`,
+					summary: `Message utilisateur : ${ selectedTemplate.value }`,
 					tags: 'C-helper'
 				} );
 
-				mw.notify( 'Les messages ont bien été ajoutés.',
-					{ title: 'C-helper', type: 'success' } );
+				mw.notify( 'Le message a bien été ajouté.', { title: 'C-helper', type: 'success' } );
 			} catch ( error ) {
-				mw.notify( 'Erreur lors de l\'ajout des messages.',
-					{ title: 'C-helper', type: 'error' } );
+				mw.notify( 'Erreur lors de l\'ajout du message.', { title: 'C-helper', type: 'error' } );
 			}
 		};
 
@@ -228,10 +251,12 @@ export default defineComponent( {
 			open,
 			pageInput,
 			substCheckbox,
-			selectedTemplates,
+			selectedTemplate,
 			extraInputs,
-			shouldShowPageInput,
 			groupedTemplates,
+			canSubmit,
+			getPageInputStatus,
+			getExtraInputStatus,
 			onPrimaryAction,
 			onDefaultAction
 		};
@@ -246,7 +271,6 @@ export default defineComponent( {
 	padding: 1em;
 }
 
-.page-input-section,
 .subst-section {
 	margin-bottom: 1em;
 }
@@ -261,10 +285,11 @@ export default defineComponent( {
 	color: #54595d;
 }
 
-.template-checkbox {
+.template-container {
 	margin: 0.5em 0;
 }
 
+.page-input-container,
 .extra-input {
 	margin: 0.5em 0 0.5em 1.5em;
 }
