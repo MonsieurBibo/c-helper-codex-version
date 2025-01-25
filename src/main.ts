@@ -99,7 +99,7 @@ function setupModules() {
 			.addClass( 'vector-menu' )
 			.attr( 'title', 'C-helper' )
 			.find( '.vector-menu-heading' )
-			.text( 'Č' );
+			.text( 'Č (version Codex)' );
 
 		$ul.empty();
 

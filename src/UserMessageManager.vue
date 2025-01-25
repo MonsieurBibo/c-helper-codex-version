@@ -47,7 +47,7 @@
 						>
 							<CdxField :status="getPageInputStatus( template )">
 								<CdxLabel>Article modifié :</CdxLabel>
-								<CdxTextInput v-model="pageInput"></CdxTextInput>
+								<CdxTextInput v-model="pageInput" placeholder="Veuillez renseigner l'article concerné..."></CdxTextInput>
 							</CdxField>
 						</div>
 

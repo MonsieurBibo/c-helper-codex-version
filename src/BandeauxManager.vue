@@ -173,8 +173,147 @@ const canSubmit = computed( () => {
 	} );
 } );
 
+interface BandeauExtended extends Bandeau {
+    problemeMultiple?: boolean;
+    paramName?: string;
+}
+
+// Liste des modèles compatibles avec Problèmes multiples
+const compatibleTemplates = [
+	'admissibilité',
+	'à prouver',
+	'à sourcer',
+	'à vérifier',
+	'BPV à sourcer',
+	'contenu évasif',
+	'sans source',
+	'source douteuse',
+	'source obsolète',
+	'source unique',
+	'sources à lier',
+	'sources secondaires',
+	'trop de sources',
+	'vérifiabilité',
+	'à catégoriser',
+	'à dater',
+	'à décoloriser',
+	'à déjargoniser',
+	'à délister',
+	'à désacadémiser',
+	'à désangliciser',
+	'à TeXifier',
+	'à wikifier',
+	'biblio',
+	'orthographe',
+	'typographie',
+	'catalogue de vente',
+	'CV',
+	'hagiographique',
+	'dithyrambe',
+	'name dropping',
+	'pub',
+	'tribune',
+	'anthropocentrisme',
+	'controverses',
+	'détournement de sources',
+	'internationaliser',
+	'neutralité',
+	'non neutre',
+	'outre-mer',
+	'rédaction',
+	'titre non encyclopédique',
+	'ton journalistique',
+	'travail inédit',
+	'anecdotes',
+	'guide pratique',
+	'pertinence',
+	'sujet à identifier',
+	'trop de citations',
+	'vie privée',
+	'à recycler',
+	'contenu à préciser',
+	'divergence avec Wikidata',
+	'incompréhensible',
+	'intro',
+	'intro incompréhensible',
+	'intro non représentative',
+	'tableau incohérent',
+	'traduction à revoir',
+	'traduction incomplète',
+	'lien internet',
+	'orphelin',
+	'pas de liens externes',
+	'trop de liens',
+	'trop de wikiliens',
+	'intro courte',
+	'intro longue',
+	'mal proportionné',
+	'synthèse',
+	'trop long',
+	'à illustrer',
+	'image à légender',
+	'trop d\'images',
+	'mettre à jour',
+	'contradiction',
+	'plan',
+	'POV fork',
+	'répétitions',
+	'utilisateur non sûr'
+] as const;
+
+const getParamName = ( templateName: string ): string => {
+	// Cas spéciaux de casse
+	const caseMap: Record<string, string> = {
+		'pov fork': 'POV fork',
+		cv: 'CV',
+		'à texifier': 'à TeXifier',
+		'divergence avec wikidata': 'divergence avec Wikidata'
+		// Ajouter d'autres cas spéciaux si nécessaire
+	};
+
+	return caseMap[ templateName.toLowerCase() ] || templateName;
+};
+
 const generateTemplates = () => {
-	return selectedBandeaux.value.map( ( bandeau ) => {
+	const problemesMultiples: BandeauExtended[] = [];
+	const standardBandeaux: BandeauExtended[] = [];
+
+	// Tri des bandeaux
+	selectedBandeaux.value.forEach( ( bandeau ) => {
+		const templateName = bandeau.template
+			.match( /\{\{([^}|]+)/ )?.[ 1 ]
+			.toLowerCase()
+			.trim();
+
+		if ( compatibleTemplates.map( ( t ) => t.toLowerCase() ).includes( templateName ) ) {
+			problemesMultiples.push( {
+				...bandeau,
+				problemeMultiple: true,
+				paramName: getParamName( templateName )
+			} );
+		} else {
+			standardBandeaux.push( bandeau );
+		}
+	} );
+
+	let output = '';
+
+	// Génération du modèle Problèmes multiples si nécessaire
+	if ( problemesMultiples.length > 1 ) {
+		output += '{{Problèmes multiples\n';
+		for ( const bandeau of problemesMultiples ) {
+			const value = bandeau.reason ?
+				reasonInputs.value[ bandeau.display ]?.trim() || '{{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}' :
+				'{{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}';
+			output += ` | ${ bandeau.paramName } = ${ value }\n`;
+		}
+		output += '}}\n';
+	} else if ( problemesMultiples.length === 1 ) {
+		standardBandeaux.push( problemesMultiples[ 0 ] );
+	}
+
+	// Génération des bandeaux standards
+	output += standardBandeaux.map( ( bandeau ) => {
 		let template = bandeau.template;
 		if ( bandeau.reason ) {
 			template = template.replace( '$(reason)', reasonInputs.value[ bandeau.display ] || '' );
@@ -184,6 +323,8 @@ const generateTemplates = () => {
 		}
 		return template;
 	} ).join( '\n' );
+
+	return output;
 };
 
 const onPrimaryAction = async () => {
