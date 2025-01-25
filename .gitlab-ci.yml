@@ -1,0 +1,90 @@
+image: node:18
+
+# Cache downloaded dependencies and plugins between builds
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .pnpm-store
+    - node_modules/
+
+variables:
+  PNPM_CACHE_FOLDER: .pnpm-store
+
+stages:
+  - setup
+  - lint
+  - build
+  - test
+  - release
+
+# Install pnpm globally
+before_script:
+  - npm install -g pnpm
+  - pnpm config set store-dir .pnpm-store
+
+install:
+  stage: setup
+  script:
+    - pnpm install
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 day
+
+lint:
+  stage: lint
+  script:
+    - pnpm run lint
+  dependencies:
+    - install
+  allow_failure: true
+
+typecheck:
+  stage: lint
+  script:
+    - pnpm run type-check
+  dependencies:
+    - install
+
+build:
+  stage: build
+  script:
+    - pnpm run build-only
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  dependencies:
+    - install
+
+release:
+  stage: release
+  script:
+    # Crée le fichier release avec la version du package.json
+    - version=$(node -p "require('./package.json').version")
+    - |
+      cat > release_notes.md << EOF
+      # Release v${version}
+
+      ## Changes
+      - See commit history for changes
+
+      ## Installation
+      1. Copy the content of dist/codex-test.user.js to your common.js page
+      EOF
+    # Copie le fichier build dans les assets de la release
+    - cp dist/codex-test.user.js "c-helper-v${version}.user.js"
+  artifacts:
+    paths:
+      - release_notes.md
+      - "c-helper-v${version}.user.js"
+  release:
+    name: 'Release $CI_COMMIT_TAG'
+    description: './release_notes.md'
+    tag_name: '$CI_COMMIT_TAG'
+    assets:
+      links:
+        - name: 'c-helper-v${version}.user.js'
+          url: '${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/c-helper-v${version}.user.js'
+  rules:
+    - if: $CI_COMMIT_TAG
