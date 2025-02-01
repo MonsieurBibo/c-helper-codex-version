@@ -15,12 +15,20 @@
         "baseUrl": ".",
         "paths": {
             "@/*": [
-                "./src/*",
+                "./src/*"
             ]
         },
-        "types": ["types-mediawiki"],
         "typeRoots": [
-            "./node_modules/@types"
+            "./node_modules/@types",
+            "./node_modules/types-mediawiki"
+        ],
+        // "types": ["vite/client"],
+        "target": "ES6",       
+        "module": "ES2015",        // on aligne le système de modules sur ES6
+        "lib": [
+            "ES2023",             // lib correspondant à notre target
+            "DOM",                // pour les APIs du navigateur
+            "DOM.Iterable"        // pour les itérables du DOM
         ]
     }
 }

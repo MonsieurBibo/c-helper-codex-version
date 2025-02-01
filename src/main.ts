@@ -1,6 +1,13 @@
 import { createApp } from 'vue';
 import BandeauxManager from './BandeauxManager.vue';
 import UserMessageManager from './UserMessageManager.vue';
+import jQuery from 'jquery';
+
+declare global {
+    interface Window {
+        $: typeof jQuery;
+    }
+}
 
 const modules = {
 	bandeaux: {
@@ -15,23 +22,14 @@ const modules = {
 	}
 };
 
-function createMountPoint( id: string ): HTMLDivElement | null {
-	const mountPoint = document.createElement( 'div' );
-	mountPoint.setAttribute( 'id', id );
-	const contentText = document.querySelector( '#mw-content-text' );
-	if ( !contentText ) {
-		return null;
-	}
-	contentText.insertAdjacentElement( 'beforebegin', mountPoint );
-	return mountPoint;
-}
-
-function createMenuItem( module: typeof modules[keyof typeof modules], callback: () => void, isMinerva = false ) {
-	const $item = $( '<li>' )
+function createMenuItem(
+	module: typeof modules[keyof typeof modules],
+	callback: () => void, isMinerva = false ) {
+	const $item = window.$( '<li>' )
 		.addClass( isMinerva ? 'toggle-list-item mw-list-item-js' : 'mw-list-item' )
 		.attr( 'id', module.id );
 
-	const $link = $( '<a>' )
+	const $link = window.$( '<a>' )
 		.addClass( isMinerva ? 'toggle-list-item__anchor' : '' )
 		.attr( {
 			href: '#',
@@ -44,8 +42,8 @@ function createMenuItem( module: typeof modules[keyof typeof modules], callback:
 
 	if ( isMinerva ) {
 		$link.append(
-			$( '<span>' ).addClass( 'minerva-icon' ),
-			$( '<span>' ).addClass( 'toggle-list-item__label' ).text( module.label )
+			window.$( '<span>' ).addClass( 'minerva-icon' ),
+			window.$( '<span>' ).addClass( 'toggle-list-item__label' ).text( module.label )
 		);
 	} else {
 		$link.text( module.label );
@@ -64,17 +62,19 @@ function setupModules() {
 	};
 
 	if ( skin === 'minerva' ) {
-		const $overflowList = $( '.page-actions-overflow-list' );
+		const $overflowList = window.$( '.page-actions-overflow-list' );
 		if ( !$overflowList.length ) {
 			return;
 		}
 
 		switch ( namespace ) {
 			case 0:
-				$overflowList.append( createMenuItem( modules.bandeaux, moduleCallbacks.bandeaux, true ) );
+				$overflowList.append(
+					createMenuItem( modules.bandeaux, moduleCallbacks.bandeaux, true ) );
 				break;
 			case 1:
-				$overflowList.append( createMenuItem( modules.messages, moduleCallbacks.messages, true ) );
+				$overflowList.append(
+					createMenuItem( modules.messages, moduleCallbacks.messages, true ) );
 				break;
 			case 2:
 				$overflowList.append(
@@ -83,11 +83,12 @@ function setupModules() {
 				);
 				break;
 			case 3:
-				$overflowList.append( createMenuItem( modules.messages, moduleCallbacks.messages, true ) );
+				$overflowList.append(
+					createMenuItem( modules.messages, moduleCallbacks.messages, true ) );
 				break;
 		}
 	} else {
-		const $cactions = $( '#p-cactions' );
+		const $cactions = window.$( '#p-cactions' );
 		if ( !$cactions.length ) {
 			return;
 		}
@@ -128,7 +129,7 @@ function setupModules() {
 }
 
 function initializeApp() {
-	if ( $( '#app-bandeaux, #app-messages' ).length ) {
+	if ( window.$( '#app-bandeaux, #app-messages' ).length ) {
 		return;
 	}
 
@@ -137,9 +138,13 @@ function initializeApp() {
 		return;
 	}
 
-	$( '<div id="app-bandeaux">' ).insertBefore( '#mw-content-text' );
-	$( '<div id="app-messages">' ).insertBefore( '#mw-content-text' );
+	window.$( '<div id="app-bandeaux">' ).insertBefore( '#mw-content-text' );
+	window.$( '<div id="app-messages">' ).insertBefore( '#mw-content-text' );
 	setupModules();
 }
 
-$( initializeApp );
+if ( document.readyState === 'loading' ) {
+	document.addEventListener( 'DOMContentLoaded', initializeApp );
+} else {
+	initializeApp();
+}

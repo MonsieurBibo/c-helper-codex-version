@@ -15,6 +15,7 @@ export default defineConfig( {
 			entry: './src/main.ts',
 			using: [
 				'vue',
+				'jquery',
 				'@wikimedia/codex',
 				'mediawiki.util'
 			],
@@ -29,6 +30,12 @@ export default defineConfig( {
 	},
 	server: {
 		hmr: true,
-		strictPort: true
+		strictPort: true,
+		cors: true,
+		headers: {
+			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+			'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept'
+		}
 	}
 } );

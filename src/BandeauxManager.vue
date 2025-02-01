@@ -55,7 +55,9 @@
 							</template>
 						</CdxCheckbox>
 
-						<div v-if="isSelected( bandeau.display ) && bandeau.reason" class="input-field">
+						<div
+							v-if="isSelected( bandeau.display ) && bandeau.reason"
+							class="input-field">
 							<CdxField label-icon="info">
 								<template #label>
 									{{ bandeau.reason }}
@@ -68,7 +70,9 @@
 							</CdxField>
 						</div>
 
-						<div v-if="isSelected( bandeau.display ) && bandeau.extra" class="input-field">
+						<div
+							v-if="isSelected( bandeau.display ) && bandeau.extra"
+							class="input-field">
 							<CdxField label-icon="info">
 								<template #label>
 									{{ bandeau.extra }}
@@ -285,6 +289,9 @@ const generateTemplates = () => {
 			.toLowerCase()
 			.trim();
 
+		if ( templateName === undefined ) {
+			return;
+		}
 		if ( compatibleTemplates.map( ( t ) => t.toLowerCase() ).includes( templateName ) ) {
 			problemesMultiples.push( {
 				...bandeau,

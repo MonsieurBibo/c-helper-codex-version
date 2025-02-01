@@ -42,12 +42,16 @@
 						</CdxRadio>
 
 						<div
-							v-show="selectedTemplate === template.display && template.required?.includes( 'page' )"
+							v-show="selectedTemplate === template.display &&
+								template.required?.includes( 'page' )"
 							class="page-input-container"
 						>
 							<CdxField :status="getPageInputStatus( template )">
 								<CdxLabel>Article modifié :</CdxLabel>
-								<CdxTextInput v-model="pageInput" placeholder="Veuillez renseigner l'article concerné..."></CdxTextInput>
+								<CdxTextInput
+									v-model="pageInput"
+									placeholder="Veuillez renseigner l'article concerné...">
+								</CdxTextInput>
 							</CdxField>
 						</div>
 
@@ -56,7 +60,7 @@
 							class="extra-input"
 						>
 							<CdxField
-								:status="getExtraInputStatus( template.display )"
+								status="default"
 							>
 								<CdxLabel>{{ template.extra }}</CdxLabel>
 								<CdxTextInput
@@ -115,11 +119,6 @@ export default defineComponent( {
 			if ( selectedTemplate.value === template.display && !pageInput.value ) {
 				return 'error';
 			}
-			return 'default';
-		};
-
-		const getExtraInputStatus = ( templateDisplay: string ) => {
-			// Toujours retourne 'default' car l'extra est facultatif
 			return 'default';
 		};
 
@@ -256,7 +255,6 @@ export default defineComponent( {
 			groupedTemplates,
 			canSubmit,
 			getPageInputStatus,
-			getExtraInputStatus,
 			onPrimaryAction,
 			onDefaultAction
 		};

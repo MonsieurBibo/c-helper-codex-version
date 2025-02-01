@@ -29,3 +29,5 @@ coverage
 
 
 .eslintcache
+
+pnpm-lock.yaml
