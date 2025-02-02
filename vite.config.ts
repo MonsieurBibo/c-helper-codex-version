@@ -11,7 +11,7 @@ export default defineConfig( {
 		vue(),
 		vueJsx(),
 		mediawikiUserscript( {
-			name: 'codex-test',
+			name: 'c-helper-codex',
 			entry: './src/main.ts',
 			using: [
 				'vue',

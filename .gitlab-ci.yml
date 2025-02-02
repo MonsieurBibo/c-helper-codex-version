@@ -82,10 +82,10 @@ release:
       - See commit history for changes
 
       ## Installation
-      1. Copy the content of dist/codex-test.user.js to your common.js page
+      1. Copy the content of dist/c-helper-codex.cjs to your common.js page
       EOF
     # Copie le fichier build dans les assets de la release
-    - cp dist/codex-test.user.js "c-helper-v${version}.user.js"
+    - cp dist/c-helper-codex.cjs "c-helper-v${version}.user.js"
   artifacts:
     paths:
       - release_notes.md
