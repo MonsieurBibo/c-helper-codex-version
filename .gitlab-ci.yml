@@ -71,16 +71,15 @@ build:
 
 release:
   stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
     # Crée le fichier release avec la version du package.json
     - version=$(node -p "require('./package.json').version")
     - |
       cat > release_notes.md << EOF
       # Release v${version}
-
       ## Changes
       - See commit history for changes
-
       ## Installation
       1. Copy the content of dist/c-helper-codex.cjs to your common.js page
       EOF
@@ -91,7 +90,7 @@ release:
       - release_notes.md
       - "c-helper-v${version}.user.js"
   release:
-    name: 'Release $CI_COMMIT_TAG'
+    name: 'Release v${version}'
     description: './release_notes.md'
     tag_name: '$CI_COMMIT_TAG'
     assets:
