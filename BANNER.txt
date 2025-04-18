@@ -1,8 +1,8 @@
 ------------------------------------------------------------------------
 
-    CODEX TEST USERSCRIPT
+    C-helper Codex version
 
-    I can't think of anything to put as a description for now.
+    Gadget de maintenance pour Wikipédia en français.
 
 ------------------------------------------------------------------------
 
@@ -10,6 +10,6 @@
     Vue and TypeScript. The original code is converted to raw JavaScript
     in a build process. To view the original source code, visit
 
-        https://gitlab.wikimedia.org/chlod/userscripts-template-codex
+        https://gitlab.wikimedia.org/mrtortue/c-helper-codex-version
 
 ------------------------------------------------------------------------
