@@ -434,6 +434,13 @@ export const bandeaux: Bandeau[] = [
 	},
 	{
 		category: 'Sourçage',
+		display: 'IA générative',
+		template: '{{IA générative|date={{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}|certain=$(extra)}}',
+		extra: 'Certain (oui/non) :',
+		help: 'Ce bandeau est à utiliser en tête d\'article pour indiquer qu\'un contenu semble provenir d\'une IA générative.'
+	},
+	{
+		category: 'Sourçage',
 		display: 'Travail inédit',
 		template: '{{Travail inédit|date={{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}|Cet article peut contenir}}',
 		help: ''
