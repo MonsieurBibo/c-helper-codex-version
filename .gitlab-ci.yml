@@ -57,7 +57,7 @@ typecheck:
 build:
   stage: build
   script:
-    - pnpm run build-only
+    - pnpm run build
   artifacts:
     paths:
       - dist/
